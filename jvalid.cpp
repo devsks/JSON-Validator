@@ -8,7 +8,11 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-void error(string, string );
+void error(string msg1, string msg2="")
+{
+	cout<<"Error : "<<msg1<<" "<<msg2<<endl;
+	exit(EXIT_FAILURE);
+}
 
 int main ( int argc, char *argv[] )
 {
@@ -26,42 +30,63 @@ int main ( int argc, char *argv[] )
 		{
 			error("Unable to open",argv[1]);
 		}
-		char ch;
-		int line_no = 1, index = 0;
+		char booli[500];		
+		char ch,prev='^',*next,*valid="{[\":,]}";
+		int line_no = 1, index = 0,obj=0,arr=0,i=0;
 		stack <char> brac;
 		while( ( ch = fgetc(json) ) != EOF )
 		{
-			index++;
-			//cout<<ch;
-			if( ch == '{'  )
-				brac.push(ch);
-			else if( ch == '}' )
+			
+			// Scanning Valid Symbols.			
+			if( strchr(valid,ch)  )
 			{
-				if( !brac.empty() )
-					brac.pop();
+				// Checking First Valid Character.
+				if( prev == '^' && ch != '{')
+					error("Invalid Json1");
+				else if(prev == '^' || ch == '{')
+				{
+					brac.puch('{');					
+					prev = '{';
+					next = "{\"";
+				}
+				else if(strchr(next,ch) == NULL)
+					error("Invalid Json");
 				else
 				{
-					cout<<"Line no : "<<line_no<<" Index : "<<index<<endl;
-					error("Check This pair Bracket","Retry");
-				}	
-			}	
-			else if( ch == '\n')
-			{
-				line_no++;
-				index = 0;
-			}	
-			
+					switch(ch)
+					{	
+						case '\"':	
+									if(prev!='\"')
+										next="\"";
+							  		else if(prev=='\"' && !obj)
+										next=":";
+									else if(prev=='\"' && obj)
+										next=",}";
+							  		else if(prev=='\"' && arr)
+										next=",";	
+									prev = '\"';
+									break;
+						case ':':	prev=" : ";
+									obj = 1;
+								
+					}
+
+					
+				}
+			}
+
 		}
-		if(brac.empty())
-			cout<<"All OK !"<<endl;
-		else
-			cout<<"Unequal Pairs of brackets ! \n";	
+		else if(prev==':')
+		{
+			booli[i++]=ch;
+			booli[i]='\0';
+			if( !strcmp(booli,"true") || !strcmp(booli,"false") || atoi(booli))
+			{	prev='-';
+			}
+		}
+		
 	}
 	
 	return 0;
 }
-void error(string msg1, string msg2="")
-{
-	cout<<"Error : "<<msg1<<" "<<msg2<<endl;
-	exit(EXIT_FAILURE);
-}
+
