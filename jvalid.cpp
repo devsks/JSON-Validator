@@ -1,5 +1,5 @@
 /*
-* @brief JSON validator tool for coommand line
+* @brief JSON validator tool for terminal
 * @author Santosh Kumar Shaw (devsks)
 * @contact santosh79.cse@gmail.com
 * @date  05-05-2016
@@ -31,43 +31,72 @@ int main ( int argc, char *argv[] )
 			error("Unable to open",argv[1]);
 		}
 		char booli[500];		
-		char ch,prev='^',*next,*valid="{[\":,]}";
+		char ch,prev='^',*next="{",*valid="{[\":,]}";
 		int line_no = 1, index = 0,obj=0,arr=0,i=0;
 		stack <char> brac;
 		while( ( ch = fgetc(json) ) != EOF )
 		{
 			
 			// Scanning Valid Symbols.			
-			if( strchr(valid,ch)  )
+			if( strchr(valid,ch)  || (obj && strchr(next,ch)))
 			{
 				// Checking First Valid Character.
-				if( prev == '^' && ch != '{')
-					error("Invalid Json1");
-				else if(prev == '^' || ch == '{')
+				if(strchr(next,ch) == NULL)
 				{
-					brac.puch('{');					
-					prev = '{';
-					next = "{\"";
-				}
-				else if(strchr(next,ch) == NULL)
+					cout<<next<<" : "<<ch<<" : "<<prev<<endl;					
 					error("Invalid Json");
+				}				 
 				else
 				{
 					switch(ch)
 					{	
-						case '\"':	
-									if(prev!='\"')
-										next="\"";
-							  		else if(prev=='\"' && !obj)
-										next=":";
-									else if(prev=='\"' && obj)
-										next=",}";
-							  		else if(prev=='\"' && arr)
-										next=",";	
-									prev = '\"';
+						case '{':	if(strchr("^{,",prev)==NULL)
+									{
+										cout<<next<<" {: "<<ch<<endl;										
+										error("Invalid Json");
+									}
+									brac.push('{');
+									prev = '{';
+									next="{\"";
+									break;						
+						case '\"':	if( prev != '\"')
+										next = "\"";
+							  		else
+									 	if( !obj)
+											next=":";
+										else if( obj==1)
+										{
+											next=",}";
+											obj = 0;
+										}							  			
+										else if( obj==2)
+											next=",";	
+									prev = '"';
 									break;
-						case ':':	prev=" : ";
+						case ':':	prev=':';
+									next="0123456789truefalse\"";
 									obj = 1;
+									break;
+						case ',':	if(obj==2)
+										next="0123456789truefalse\"";
+									else if(prev=='}')
+										next="{";
+									else
+										next="\"";
+									prev=',';											
+									break;
+						case '}':	if(!brac.empty())	
+									{
+									brac.pop();	
+																	
+									next = "{,}";
+									prev = '}';											
+									}
+									else
+									{
+										error("Fatal error");
+									}									
+									break;
 								
 					}
 
@@ -76,14 +105,10 @@ int main ( int argc, char *argv[] )
 			}
 
 		}
-		else if(prev==':')
-		{
-			booli[i++]=ch;
-			booli[i]='\0';
-			if( !strcmp(booli,"true") || !strcmp(booli,"false") || atoi(booli))
-			{	prev='-';
-			}
-		}
+		if(brac.empty())
+			cout<<"ALL OKK!";
+		else
+			error("Error");
 		
 	}
 	
