@@ -32,7 +32,7 @@ int main ( int argc, char *argv[] )
 			error("Unable to open",argv[1]);
 		}
 		char booli[500];		
-		char ch,prev='^',*next="{",*valid="{[\":,]}";
+		char ch,prev='^',*next="{",*valid="{[\":,0123456789truefalsenull]}";
 		int line_no = 1, index = 0,obj=0,arr=0,i=0;
 		row = 1 , col = 0;		
 		stack <char> brac;		
@@ -40,7 +40,7 @@ int main ( int argc, char *argv[] )
 		{
 		
 			col++;
-			if(ch=='"' && strchr(next,ch)==NULL)
+			if( prev !='"' && strchr(valid,ch) && strchr(next,ch)==NULL )
 			{
 				cout<<next<<" - "<<prev<<" - "<<ch<<endl;
 				error("Not \" ");			
@@ -65,38 +65,35 @@ int main ( int argc, char *argv[] )
 									}
 									brac.push('{');
 									prev = '{';
-									obj=0;
+									if(obj!=2)									
+										obj=0;
 									next="\"";
 									break;
 						case '[':	brac.push('[');
 									prev = '[';
 									obj = 2;
-									next="[{0123456789truefalse\"";
+									next="[{0123456789truefalsenull\"";
 									break;						
-						case '"':	if( prev != '"')
+						case '"':	
+									if( prev != '"')
 										next = "\"";
 							  		else
 									{ 	
-										if( !obj )
+										next = ":,]}";										
+										/*if( !obj )
 											next=":";
 										else
 										{
 											next=",]}";
-										}
+										}*/
 									}
 									prev = '"';
 									break;
 						case ':':	prev=':';
-									next="[{0123456789truefalse\"";
+									next="[{0123456789truefalsenull\"";
 									obj = 1;
 									break;
-						case ',':	if( obj == 2 )
-										next="0123456789truefalse\"";
-									else
-									{
-										obj = 0;										
-										next="{\"";
-									}
+						case ',':	next="0123456789truefalsenull\"[{";
 									prev=',';											
 									break;
 						case '}':	if(!brac.empty())	
@@ -104,6 +101,7 @@ int main ( int argc, char *argv[] )
 										char bracket = brac.top();
 										if( bracket != '{' )
 										{
+											cout<<bracket;											
 											error("Braces does not matches!","Invalid JSON");
 										}										
 										brac.pop();
@@ -120,12 +118,14 @@ int main ( int argc, char *argv[] )
 										char bracket = brac.top();
 										if( bracket != '[' )
 										{
+											cout<<bracket;
 											error("Braces does not matches!","Invalid JSON");
 										}										
-										brac.pop();	
-										next = ",}";
+										brac.pop();
+											
+										next = ",]}";
 										prev = ']';	
-										obj = 0;										
+																				
 									}
 									else
 									{
@@ -138,8 +138,11 @@ int main ( int argc, char *argv[] )
 					case 'r':		prev='r';
 									next="u";
 									break;	
-					case 'u':		prev='u';
-									next="e";
+					case 'u':		if(prev=='n')
+										next="l";
+									else
+										next="e";
+									prev='u';
 									break;	
 					case 'e':		prev='e';
 									next=",]}";
@@ -150,11 +153,19 @@ int main ( int argc, char *argv[] )
 					case 'a':		prev='a';
 									next="l";
 									break;
-					case 'l':		prev='l';
-									next="s";
+					case 'l':		if(prev=='a')	
+										next="s";
+									else if(prev=='u')
+										next="l";
+									else
+										next=",]}";
+									prev='l';									
 									break;
 					case 's':		prev='s';
 									next="e";
+									break;
+					case 'n':		prev='n';
+									next="u";
 									break;
 					}
 			}
