@@ -52,7 +52,7 @@ int main ( int argc, char *argv[] )
 				if(ch>='0' && ch<='9')
 				{
 					prev = ch;
-					next = "0123456789,}]";
+					next = "0123456789,";
 				}
 				else					
 				{
