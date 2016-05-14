@@ -12,7 +12,8 @@ int row, col;
 void error(string msg1, string msg2="")
 {
 	cout<<"Error : "<<msg1<<" "<<msg2<<endl;
-	cout<<"On line : "<<row<<" Column : "<<col<<endl;
+	if(row)
+		cout<<"On line : "<<row<<" Column : "<<col<<endl;
 	exit(EXIT_FAILURE);
 }
 
@@ -32,11 +33,15 @@ int main ( int argc, char *argv[] )
 		{
 			error("Unable to open",argv[1]);
 		}
-		char ch, prev = '^', *next = "{", *valid = "{[\":,0123456789truefalsenull]}",bracket;
+				
+		char ch, prev_state = '^', *next_state = "{", *valid_state = "{[\":,0123456789truefalsenull]}",bracket;
+				
 		int line_no = 1, obj = 0;
 		bool first_char = false;
+		
 		row = 1 , col = 0;		
 		stack <char> brac;		
+
 		while( ( ch = fgetc(json) ) != EOF )
 		{
 		
@@ -49,72 +54,79 @@ int main ( int argc, char *argv[] )
 					error("First character should be { ", "Check the expression");
 			}
 			// When object in complete			
-			if( !strchr(" \n\t",ch) && strcmp(next,"nothing")==0)
+			if( !strchr(" \n\t",ch) && strcmp(next_state,"nothing")==0)
 			{
 				error("Extra Characters at the end of the object .");		
 			}
 			// Validating expressions
-			if( strchr(next,ch) == NULL  && ( prev!='"' && strcmp(next,"\""))  && strchr(valid,ch)  )
+			if( strchr(next_state,ch) == NULL  && ( prev_state!='"' && strcmp(next_state,"\"")) && !strchr(" \n\t",ch) )
 			{
-				cout<<"\nExpected '"<<next<<"' not '"<<ch<<"'\n";
+				cout<<"\nExpected '"<<next_state<<"' not '"<<ch<<"'\n";
 				error("Invalid Expression");			
 			}
-			else if( strchr(next,ch) )
+			else if( strchr(next_state,ch) )
 			{
 				// Checking First Valid Character.
 				if(ch>='0' && ch<='9')
 				{
-					prev = ch;
-					next = "0123456789,}]";
+					prev_state = ch;
+					next_state = "0123456789,}]";
 				}
 				else					
 				{
 					switch(ch)
 					{	
 						case '{':	brac.push('{');
-									prev = '{';
+									prev_state = '{';
 									// After '{' we expect "key"  only									
-									next="\"";
+									next_state = "\"";
 									obj = 0;
 									break;
+
 						case '[':	brac.push('[');
-									prev = '[';
+									prev_state = '[';
 									// Array elements can be a 'String', 'Number', 'boolean', 'null',' { object } ' or '[ array ]' only.
-									next="[{0123456789tfn\"";
-									break;						
-						case '"':	if( prev != '"')
+									next_state = "[{0123456789tfn\"";
+									break;	
+					
+						case '"':	if( prev_state != '"')
 										// We need "key" or "value" as String										
-										next = "\"";
+										next_state = "\"";
 							  		else
 									{ 	
 										bracket = brac.top();
 										// We need ':' to make a pair.
 										if( bracket == '{' && !obj)
-											next=":";
+											next_state=":";
+										// Check for other {object}'s or end of  {object}
 										else if( bracket == '{' && obj )
-											next=",}";
+											next_state=",}";
+										// Check for other elements or end of the array
 										else
-											next=",]";
+											next_state=",]";
 									}
-									prev = '"';
+									prev_state = '"';
 									break;
-						case ':':	prev=':';
+
+						case ':':	prev_state=':';
 									// After ':' we expect a 'String', 'Number', 'boolean', 'null',' { object } ' or '[ array ]' only.
-									next = "[{0123456789tfn\"";
+									next_state = "[{0123456789tfn\"";
 									obj = 1;
 									break;
-						case ',':	prev = ',';
+
+						case ',':	prev_state = ',';
 									bracket = brac.top();
 									if( bracket == '{' )
 									{
 										// After ',' we expect a { object }  only.
-										next="\"";
+										next_state="\"";
 										obj = 0;
 									}
 									else
 										// After ',' we expect a 'String', 'Number', 'boolean', 'null',' { object } ' or '[ array ]' only.	
-										next = "[{0123456789tfn\"";
+										next_state = "[{0123456789tfn\"";
 									break;
+
 						case '}':	if(!brac.empty())	
 									{
 										bracket = brac.top();
@@ -126,23 +138,24 @@ int main ( int argc, char *argv[] )
 
 										brac.pop();
 										if(brac.empty())
-											next = "nothing";
+											next_state = "nothing";
 										else
 										{
 											bracket = brac.top();
 											if(bracket == '{')
-												next = ",}";
+												next_state = ",}";
 											else
-												next = ",]";											
+												next_state = ",]";											
 										}
 		
-										prev = '}';											
+										prev_state = '}';											
 									}
 									else
 									{
 										error(" } error");
 									}									
 									break;
+
 						case ']':	if(!brac.empty())	
 									{
 										bracket = brac.top();
@@ -153,73 +166,82 @@ int main ( int argc, char *argv[] )
 										}										
 										brac.pop();
 										if(brac.empty())
-											next = "nothing";
+											next_state = "nothing";
 										else
 										{
 											bracket = brac.top();
 											if(bracket == '{')
-												next = ",}";
+												next_state = ",}";
 											else
-												next = ",]";											
+												next_state = ",]";											
 										}	
-										prev = ']';	
+										prev_state = ']';	
 									}
 									else
 									{
 										error("] error");
 									}									
 									break;
-					case 't':		prev = 't';
-									next = "r";
+
+					case 't':		prev_state = 't';
+									next_state = "r";
 									break;
-					case 'r':		prev = 'r';
-									next = "u";
+
+					case 'r':		prev_state = 'r';
+									next_state = "u";
 									break;	
+
 									// It can be 'trUe' or 'nUll'.
-					case 'u':		if( prev == 'n')
-										next = "l";
+					case 'u':		if( prev_state == 'n')
+										next_state = "l";
 									else
-										next = "e";
-									prev = 'u';
+										next_state = "e";
+									prev_state = 'u';
 									break;	
-					case 'e':		prev = 'e';
+
+					case 'e':		prev_state = 'e';
 									bracket = brac.top();
 									if( bracket == '{' )
-										next = ",}";
+										next_state = ",}";
 									else
-										next = ",]";
+										next_state = ",]";
 									break;
-					case 'f':		prev = 'f';
-									next = "a";
+
+					case 'f':		prev_state = 'f';
+									next_state = "a";
 									break;
-					case 'a':		prev = 'a';
-									next = "l";
+
+					case 'a':		prev_state = 'a';
+									next_state = "l";
 									break;
+
 									// It can be 'faLse' or 'nuLL'.
-					case 'l':		if(prev == 'a')	
-										next = "s";
-									else if( prev == 'u')
-										next = "l";
+					case 'l':		if(prev_state == 'a')	
+										next_state = "s";
+									else if( prev_state == 'u')
+										next_state = "l";
 									else
 									{
 										bracket = brac.top();
 										if( bracket == '{' )
-											next = ",}";
+											next_state = ",}";
 										else
-											next = ",]";
+											next_state = ",]";
 									}									
-									prev = 'l';									
+									prev_state = 'l';									
 									break;
-					case 's':		prev = 's';
-									next = "e";
+
+					case 's':		prev_state = 's';
+									next_state = "e";
 									break;
-					case 'n':		prev = 'n';
-									next = "u";
+
+					case 'n':		prev_state = 'n';
+									next_state = "u";
 									break;
 					}
 			}
 			
-			//cout<<prev<<" "; // For debugging purpose
+			//cout<<prev_state<<" "; // For debugging purpose
 					
 			}
 			else if( ch == '\n')
