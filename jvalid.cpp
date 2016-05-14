@@ -4,6 +4,7 @@
 * @contact santosh79.cse@gmail.com
 * @date  05-05-2016
 * @quote "Code Like There's No Tommorow !"
+* Dedicated to Debabrata Acharya , CTO - Oncalve Systems.
 **/
 #include <bits/stdc++.h>
 using namespace std;
@@ -45,12 +46,12 @@ int main ( int argc, char *argv[] )
 			{
 				first_char = true;
 				if(ch!='{')
-					error("First character should be { ");
+					error("First character should be { ", "Check the expression");
 			}
 			// When object in complete			
 			if( !strchr(" \n\t",ch) && strcmp(next,"nothing")==0)
 			{
-				error("Extra Characters and the end of the object .");		
+				error("Extra Characters at the end of the object .");		
 			}
 			// Validating expressions
 			if( strchr(next,ch) == NULL  && ( prev!='"' && strcmp(next,"\""))  && strchr(valid,ch)  )
