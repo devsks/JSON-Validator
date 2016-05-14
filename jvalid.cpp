@@ -31,21 +31,33 @@ int main ( int argc, char *argv[] )
 		{
 			error("Unable to open",argv[1]);
 		}
-		char booli[500];		
-		char ch,prev='^',*next="{",*valid="{[\":,0123456789truefalsenull]}";
-		int line_no = 1, index = 0,obj=0,arr=0,i=0;
+		char ch, prev = '^', *next = "{", *valid = "{[\":,0123456789truefalsenull]}",bracket;
+		int line_no = 1, obj = 0;
+		bool first_char = false;
 		row = 1 , col = 0;		
 		stack <char> brac;		
 		while( ( ch = fgetc(json) ) != EOF )
 		{
 		
 			col++;
-			if( prev !='"' && strchr(valid,ch) && strchr(next,ch)==NULL )
+			// Object starts with '{'
+			if( !strchr(" \n\t",ch) && !first_char )
 			{
-				cout<<next<<" - "<<prev<<" - "<<ch<<endl;
-				error("Not \" ");			
+				first_char = true;
+				if(ch!='{')
+					error("First character should be { ");
 			}
-			// Scanning Valid Symbols.			
+			// When object in complete			
+			if( !strchr(" \n\t",ch) && strcmp(next,"nothing")==0)
+			{
+				error("Extra Characters and the end of the object .");		
+			}
+			// Validating expressions
+			if( strchr(next,ch) == NULL  && ( prev!='"' && strcmp(next,"\""))  && strchr(valid,ch)  )
+			{
+				cout<<"\nExpected '"<<next<<"' not '"<<ch<<"'\n";
+				error("Invalid Expression");			
+			}
 			else if( strchr(next,ch) )
 			{
 				// Checking First Valid Character.
@@ -58,121 +70,158 @@ int main ( int argc, char *argv[] )
 				{
 					switch(ch)
 					{	
-						case '{':	if(strchr("^{[:,",prev)==NULL)
-									{
-										cout<<next<<" { - "<<ch<<endl;										
-										error("Invalid Json");
-									}
-									brac.push('{');
+						case '{':	brac.push('{');
 									prev = '{';
-									if(obj!=2)									
-										obj=0;
+									// After '{' we expect "key"  only									
 									next="\"";
+									obj = 0;
 									break;
 						case '[':	brac.push('[');
 									prev = '[';
-									obj = 2;
-									next="[{0123456789truefalsenull\"";
+									// Array elements can be a 'String', 'Number', 'boolean', 'null',' { object } ' or '[ array ]' only.
+									next="[{0123456789tfn\"";
 									break;						
-						case '"':	
-									if( prev != '"')
+						case '"':	if( prev != '"')
+										// We need "key" or "value" as String										
 										next = "\"";
 							  		else
 									{ 	
-										next = ":,]}";										
-										/*if( !obj )
+										bracket = brac.top();
+										// We need ':' to make a pair.
+										if( bracket == '{' && !obj)
 											next=":";
+										else if( bracket == '{' && obj )
+											next=",}";
 										else
-										{
-											next=",]}";
-										}*/
+											next=",]";
 									}
 									prev = '"';
 									break;
 						case ':':	prev=':';
-									next="[{0123456789truefalsenull\"";
+									// After ':' we expect a 'String', 'Number', 'boolean', 'null',' { object } ' or '[ array ]' only.
+									next = "[{0123456789tfn\"";
 									obj = 1;
 									break;
-						case ',':	next="0123456789truefalsenull\"[{";
-									prev=',';											
+						case ',':	prev = ',';
+									bracket = brac.top();
+									if( bracket == '{' )
+									{
+										// After ',' we expect a { object }  only.
+										next="\"";
+										obj = 0;
+									}
+									else
+										// After ',' we expect a 'String', 'Number', 'boolean', 'null',' { object } ' or '[ array ]' only.	
+										next = "[{0123456789tfn\"";
 									break;
 						case '}':	if(!brac.empty())	
 									{
-										char bracket = brac.top();
+										bracket = brac.top();
 										if( bracket != '{' )
 										{
 											cout<<bracket;											
 											error("Braces does not matches!","Invalid JSON");
 										}										
+
 										brac.pop();
-										next = "{,}]";
+										if(brac.empty())
+											next = "nothing";
+										else
+										{
+											bracket = brac.top();
+											if(bracket == '{')
+												next = ",}";
+											else
+												next = ",]";											
+										}
+		
 										prev = '}';											
 									}
 									else
 									{
-										error("} error");
+										error(" } error");
 									}									
 									break;
 						case ']':	if(!brac.empty())	
 									{
-										char bracket = brac.top();
+										bracket = brac.top();
 										if( bracket != '[' )
 										{
 											cout<<bracket;
 											error("Braces does not matches!","Invalid JSON");
 										}										
 										brac.pop();
-											
-										next = ",]}";
+										if(brac.empty())
+											next = "nothing";
+										else
+										{
+											bracket = brac.top();
+											if(bracket == '{')
+												next = ",}";
+											else
+												next = ",]";											
+										}	
 										prev = ']';	
-																				
 									}
 									else
 									{
 										error("] error");
 									}									
 									break;
-					case 't':		prev='t';
-									next="r";
+					case 't':		prev = 't';
+									next = "r";
 									break;
-					case 'r':		prev='r';
-									next="u";
+					case 'r':		prev = 'r';
+									next = "u";
 									break;	
-					case 'u':		if(prev=='n')
-										next="l";
+									// It can be 'trUe' or 'nUll'.
+					case 'u':		if( prev == 'n')
+										next = "l";
 									else
-										next="e";
-									prev='u';
+										next = "e";
+									prev = 'u';
 									break;	
-					case 'e':		prev='e';
-									next=",]}";
-									break;
-					case 'f':		prev='f';
-									next="a";
-									break;
-					case 'a':		prev='a';
-									next="l";
-									break;
-					case 'l':		if(prev=='a')	
-										next="s";
-									else if(prev=='u')
-										next="l";
+					case 'e':		prev = 'e';
+									bracket = brac.top();
+									if( bracket == '{' )
+										next = ",}";
 									else
-										next=",]}";
-									prev='l';									
+										next = ",]";
 									break;
-					case 's':		prev='s';
-									next="e";
+					case 'f':		prev = 'f';
+									next = "a";
 									break;
-					case 'n':		prev='n';
-									next="u";
+					case 'a':		prev = 'a';
+									next = "l";
+									break;
+									// It can be 'faLse' or 'nuLL'.
+					case 'l':		if(prev == 'a')	
+										next = "s";
+									else if( prev == 'u')
+										next = "l";
+									else
+									{
+										bracket = brac.top();
+										if( bracket == '{' )
+											next = ",}";
+										else
+											next = ",]";
+									}									
+									prev = 'l';									
+									break;
+					case 's':		prev = 's';
+									next = "e";
+									break;
+					case 'n':		prev = 'n';
+									next = "u";
 									break;
 					}
 			}
-			cout<<prev<<" ";
+			
+			//cout<<prev<<" "; // For debugging purpose
 					
 			}
-			else if(ch=='\n')
+			else if( ch == '\n')
 			{
 				row++;
 				col = 0;			
