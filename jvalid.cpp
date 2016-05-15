@@ -8,7 +8,9 @@
 **/
 #include <bits/stdc++.h>
 using namespace std;
+
 int row, col;
+
 void error(string msg1, string msg2="")
 {
 	cout<<"Error : "<<msg1<<" "<<msg2<<endl;
@@ -152,7 +154,7 @@ int main ( int argc, char *argv[] )
 									}
 									else
 									{
-										error(" } error");
+										error("Extra '}'");
 									}									
 									break;
 
@@ -179,7 +181,7 @@ int main ( int argc, char *argv[] )
 									}
 									else
 									{
-										error("] error");
+										error("Extra ']' ");
 									}									
 									break;
 
