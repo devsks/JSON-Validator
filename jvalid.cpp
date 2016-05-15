@@ -4,7 +4,7 @@
 * @contact santosh79.cse@gmail.com
 * @date  05-05-2016
 * @quote "Code Like There's No Tommorow !"
-* Dedicated to Debabrata Acharya , CTO - Oncalve Systems.
+* @Dedicated to Debabrata Acharya , CTO - Oncalve Systems.
 **/
 #include <bits/stdc++.h>
 using namespace std;
@@ -36,10 +36,10 @@ int main ( int argc, char *argv[] )
 			error("Unable to open",argv[1]);
 		}
 				
-		char ch, prev_state = '^', *next_state = "{", *valid_state = "{[\":,0123456789truefalsenull]}",bracket;
+		char ch, prev_state = '^', *next_state = "{", *valid_state = "{[\":,+-.0123456789truefalsenull]}",bracket;
 				
 		int line_no = 1, obj = 0;
-		bool first_char = false;
+		bool first_char = false, decimal = false;
 		
 		row = 1 , col = 0;		
 		stack <char> brac;		
@@ -52,11 +52,11 @@ int main ( int argc, char *argv[] )
 			if( !strchr(" \n\t",ch) && !first_char )
 			{
 				first_char = true;
-				if(ch!='{')
+				if( ch != '{' )
 					error("First character should be { ", "Check the expression");
 			}
-			// When object in complete			
-			if( !strchr(" \n\t",ch) && strcmp(next_state,"nothing")==0)
+			// When object is complete and we encounter extra characters.			
+			if( !strchr(" \n\t", ch) && strcmp(next_state,"nothing")==0)
 			{
 				error("Extra Characters at the end of the object .");		
 			}
@@ -72,7 +72,12 @@ int main ( int argc, char *argv[] )
 				if(ch>='0' && ch<='9')
 				{
 					prev_state = ch;
-					next_state = "0123456789,}]";
+					
+					bracket = brac.top();
+					if( !decimal)
+						next_state = ".0123456789,]}";
+					else
+						next_state = "0123456789,]}";
 				}
 				else					
 				{
@@ -88,7 +93,7 @@ int main ( int argc, char *argv[] )
 						case '[':	brac.push('[');
 									prev_state = '[';
 									// Array elements can be a 'String', 'Number', 'boolean', 'null',' { object } ' or '[ array ]' only.
-									next_state = "[{0123456789tfn\"";
+									next_state = "[{+-.0123456789tfn\"";
 									break;	
 					
 						case '"':	if( prev_state != '"')
@@ -112,11 +117,12 @@ int main ( int argc, char *argv[] )
 
 						case ':':	prev_state=':';
 									// After ':' we expect a 'String', 'Number', 'boolean', 'null',' { object } ' or '[ array ]' only.
-									next_state = "[{0123456789tfn\"";
+									next_state = "[{+-.0123456789tfn\"";
 									obj = 1;
 									break;
 
 						case ',':	prev_state = ',';
+									decimal = false;
 									bracket = brac.top();
 									if( bracket == '{' )
 									{
@@ -126,7 +132,7 @@ int main ( int argc, char *argv[] )
 									}
 									else
 										// After ',' we expect a 'String', 'Number', 'boolean', 'null',' { object } ' or '[ array ]' only.	
-										next_state = "[{0123456789tfn\"";
+										next_state = "[{+-.0123456789tfn\"";
 									break;
 
 						case '}':	if(!brac.empty())	
@@ -183,6 +189,18 @@ int main ( int argc, char *argv[] )
 									{
 										error("Extra ']' ");
 									}									
+									break;
+					case '-':		prev_state = '-';
+									next_state = "0123456789";
+									break;
+
+					case '+':		prev_state = '+';
+									next_state = "0123456789";
+									break;
+
+					case '.':		prev_state = '.';
+									decimal = true;
+									next_state = "0123456789";
 									break;
 
 					case 't':		prev_state = 't';
