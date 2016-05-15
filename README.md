@@ -1,3 +1,4 @@
 # JSON-Validator
-UNDER CONSTRUCTION
-CHECK BACK SOON!
+To install
+first run #make
+then run #make install or #sudo make install
