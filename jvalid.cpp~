@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 		// Stop Execution
 		error("Usage  'jvalid filename'","Retry !");
 	else
-		check(argv[1]);
+		check(argv[1])
 	return 0;
 }
 void check(char *fileName)
