@@ -8,7 +8,7 @@
 **/
 #include <bits/stdc++.h>
 using namespace std;
-
+// Global variables
 int row, col;
 
 void error(string msg1, string msg2="")
